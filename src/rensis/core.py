@@ -250,7 +250,7 @@ class NSISFile:
             script_bin = d.read(script_size)
         else:
             nextbytes = self._get_bytes(self.header_size, 'compressed_header_size')
-            bzd = nsisunbz2.core.Bz2Decompress(nextbytes, self.script_size)
+            bzd = nsisunbz2.core.Bz2Decompress(nextbytes)
             script_bin = bzd.decompress()
 
         script_bin_sha256 = hashlib.sha256(script_bin).hexdigest()
