@@ -1,5 +1,6 @@
 """Library for reverse engineering the Nullsoft Scriptable Install System (NSIS)."""
 import hashlib
+import importlib.resources
 import io
 import lzma
 import re
@@ -8,19 +9,39 @@ import zlib
 
 import nsisunbz2.core
 import pefile
+import yara
 
 
 class NSISFile:
     """Parses one NSIS installer."""
 
-    def __init__(self, data, compression_type=None, solid=False):
+    def __init__(self, data):
         if not isinstance(data, bytes):
             raise TypeError('Input must be bytes')
         self.data = data
         self.f = io.BytesIO(data)
 
-        self.compression_type = compression_type
-        self.solid = solid
+        stubid = importlib.resources.files('rensis.data').joinpath('stubid.yar').read_text()
+        rules = yara.compile(source=stubid)
+        matches = rules.match(data=data)
+        if not any(matches):
+            raise LookupError('Unknown StubID')
+        for m in rules.match(data=data):
+            if 'zlib' in m.rule:
+                self.compression_type = 'zlib'
+            elif 'lzma' in m.rule:
+                self.compression_type = 'lzma'
+            elif 'bzip2' in m.rule:
+                self.compression_type = 'bzip2'
+            else:
+                raise LookupError('Unknown compression')
+
+            if 'solid' in m.rule:
+                self.solid = True
+            else:
+                self.solid = False
+
+        self.matches = matches
 
         self.sha256 = None
 
