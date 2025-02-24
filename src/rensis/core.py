@@ -21,7 +21,7 @@ class NSISFile:
         self.data = data
         self.f = io.BytesIO(data)
 
-        stubid = importlib.resources.files('rensis.data').joinpath('stubid.yar').read_text()
+        stubid = importlib.resources.files('rensis.stubid').joinpath('stubid.yar').read_text()
         rules = yara.compile(source=stubid)
         matches = rules.match(data=data)
         if not any(matches):
